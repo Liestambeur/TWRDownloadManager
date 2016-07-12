@@ -42,7 +42,8 @@
         if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_7_1) {
             backgroundConfiguration = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:[[NSBundle mainBundle] bundleIdentifier]];
         } else {
-            backgroundConfiguration = [NSURLSessionConfiguration backgroundSessionConfiguration:@"re.touchwa.downloadmanager"];
+//            backgroundConfiguration = [NSURLSessionConfiguration backgroundSessionConfiguration:@"re.touchwa.downloadmanager"];
+            backgroundConfiguration = [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:@"re.touchwa.downloadmanager"];
         }
 
         self.backgroundSession = [NSURLSession sessionWithConfiguration:backgroundConfiguration delegate:self delegateQueue:nil];
@@ -100,7 +101,30 @@
              remainingTime:(void(^)(NSUInteger seconds))remainingTimeBlock
            completionBlock:(void(^)(BOOL completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
-
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (!fileName) {
+        fileName = [urlString lastPathComponent];
+    }
+    
+    if (![self fileDownloadCompletedForUrl:urlString]) {
+        NSLog(@"File is downloading!");
+    } else if (![self fileExistsWithName:fileName inDirectory:directory]) {
+        NSURLRequest *request = [NSURLRequest requestWithURL:url];
+        NSURLSessionDownloadTask *downloadTask;
+        if (backgroundMode) {
+            downloadTask = [self.backgroundSession downloadTaskWithRequest:request];
+        } else {
+            downloadTask = [self.session downloadTaskWithRequest:request];
+        }
+        TWRDownloadObject *downloadObject = [[TWRDownloadObject alloc] initWithDownloadTask:downloadTask progressBlock:progressBlock remainingTime:remainingTimeBlock completionBlock:completionBlock];
+        downloadObject.startDate = [NSDate date];
+        downloadObject.fileName = fileName;
+        downloadObject.directoryName = directory;
+        [self.downloads addEntriesFromDictionary:@{urlString:downloadObject}];
+        [downloadTask resume];
+    } else {
+        NSLog(@"File already exists!");
+    }
 }
 
 - (void)downloadFileForURL:(NSString *)url
