@@ -6,7 +6,8 @@
 //  Copyright (c) 2014 Touchware. All rights reserved.
 //
 
-#define FILE_URL @"http://ovh.net/files/1Gio.dat"
+//#define FILE_URL @"http://ovh.net/files/1Gio.dat"
+#define FILE_URL @"http://ovh.net/files/10Mio.dat"
 
 #import "ViewController.h"
 #import "TWRDownloadManager.h"
@@ -44,9 +45,12 @@
 }
 
 - (IBAction)startDownload:(id)sender {
+    self.mainLabel.text = @"start download";
+    NSLog(@"start download");
     // Just a demo example file...
     [[TWRDownloadManager sharedManager] downloadFileForURL:FILE_URL progressBlock:^(CGFloat progress) {
         NSLog(@"%.2f", progress);
+        self.mainLabel.text = [NSString stringWithFormat:@"Progress: %.2f", progress];
         self.progress = progress;
         self.progressView.progress = progress;
     } remainingTime:^(NSUInteger seconds) {
