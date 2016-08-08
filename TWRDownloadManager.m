@@ -56,6 +56,33 @@
 #pragma mark - Downloading...
 
 - (void)downloadFileForURL:(NSString *)urlString
+         toAbsolutePathURL:(NSString *)absolutePathURL
+             progressBlock:(void(^)(CGFloat progress))progressBlock
+             remainingTime:(void(^)(NSUInteger seconds))remainingTimeBlock
+           completionBlock:(void(^)(BOOL completed))completionBlock
+      enableBackgroundMode:(BOOL)backgroundMode {
+    NSURL *url = [NSURL URLWithString:urlString];
+
+    if (![self fileDownloadCompletedForUrl:urlString]) {
+        NSLog(@"File is downloading!");
+    } else {
+        // TBD check if target file exists ?? ?? ??
+        NSURLRequest *request = [NSURLRequest requestWithURL:url];
+        NSURLSessionDownloadTask *downloadTask;
+        if (backgroundMode) {
+            downloadTask = [self.backgroundSession downloadTaskWithRequest:request];
+        } else {
+            downloadTask = [self.session downloadTaskWithRequest:request];
+        }
+        TWRDownloadObject *downloadObject = [[TWRDownloadObject alloc] initWithDownloadTask:downloadTask progressBlock:progressBlock remainingTime:nil completionBlock:completionBlock];
+        downloadObject.startDate = [NSDate date];
+        downloadObject.absoluteTarget = absolutePathURL;
+        [self.downloads addEntriesFromDictionary:@{urlString:downloadObject}];
+        [downloadTask resume];
+    }
+}
+
+- (void)downloadFileForURL:(NSString *)urlString
                   withName:(NSString *)fileName
           inDirectoryNamed:(NSString *)directory
               friendlyName:(NSString *)friendlyName
@@ -278,6 +305,10 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
     }
 
 	if (success) {
+        if (download.absoluteTarget) {
+            destinationLocation = [NSURL URLWithString: download.absoluteTarget];
+            [[NSFileManager defaultManager] removeItemAtURL:destinationLocation error:nil];
+        } else
 	    if (download.directoryName) {
 	        destinationLocation = [[[self cachesDirectoryUrlPath] URLByAppendingPathComponent:download.directoryName] URLByAppendingPathComponent:download.fileName];
 	    } else {
