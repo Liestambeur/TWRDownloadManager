@@ -59,7 +59,7 @@
          toAbsolutePathURL:(NSString *)absolutePathURL
              progressBlock:(void(^)(CGFloat progress))progressBlock
              remainingTime:(void(^)(NSUInteger seconds))remainingTimeBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     NSURL *url = [NSURL URLWithString:urlString];
 
@@ -88,7 +88,7 @@
               friendlyName:(NSString *)friendlyName
              progressBlock:(void(^)(CGFloat progress))progressBlock
              remainingTime:(void(^)(NSUInteger seconds))remainingTimeBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     NSURL *url = [NSURL URLWithString:urlString];
     if (!fileName) {
@@ -126,13 +126,13 @@
           inDirectoryNamed:(NSString *)directory
              progressBlock:(void(^)(CGFloat progress))progressBlock
              remainingTime:(void(^)(NSUInteger seconds))remainingTimeBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     NSURL *url = [NSURL URLWithString:urlString];
     if (!fileName) {
         fileName = [urlString lastPathComponent];
     }
-    
+
     if (![self fileDownloadCompletedForUrl:urlString]) {
         NSLog(@"File is downloading!");
     } else if (![self fileExistsWithName:fileName inDirectory:directory]) {
@@ -158,7 +158,7 @@
           inDirectoryNamed:(NSString *)directory
              progressBlock:(void(^)(CGFloat progress))progressBlock
              remainingTime:(void(^)(NSUInteger seconds))remainingTimeBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     [self downloadFileForURL:url
                     withName:[url lastPathComponent]
@@ -172,7 +172,7 @@
 - (void)downloadFileForURL:(NSString *)url
              progressBlock:(void(^)(CGFloat progress))progressBlock
              remainingTime:(void(^)(NSUInteger seconds))remainingTimeBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     [self downloadFileForURL:url
                     withName:[url lastPathComponent]
@@ -187,7 +187,7 @@
                   withName:(NSString *)fileName
           inDirectoryNamed:(NSString *)directory
              progressBlock:(void(^)(CGFloat progress))progressBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     [self downloadFileForURL:urlString
                    withName:fileName
@@ -201,7 +201,7 @@
 - (void)downloadFileForURL:(NSString *)urlString
           inDirectoryNamed:(NSString *)directory
              progressBlock:(void(^)(CGFloat progress))progressBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     // if no file name was provided, use the last path component of the URL as its name
     [self downloadFileForURL:urlString
@@ -214,7 +214,7 @@
 
 - (void)downloadFileForURL:(NSString *)urlString
              progressBlock:(void(^)(CGFloat progress))progressBlock
-           completionBlock:(void(^)(BOOL completed))completionBlock
+           completionBlock:(void(^)(NSInteger completed))completionBlock
       enableBackgroundMode:(BOOL)backgroundMode {
     [self downloadFileForURL:urlString
             inDirectoryNamed:nil
@@ -294,13 +294,15 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
     NSString *fileIdentifier = downloadTask.originalRequest.URL.absoluteString;
     TWRDownloadObject *download = [self.downloads objectForKey:fileIdentifier];
 
- 	BOOL success = YES;
+ 	  BOOL success = YES;
+    NSInteger code = 0;
 
     if ([downloadTask.response isKindOfClass:[NSHTTPURLResponse class]]) {
         NSInteger statusCode = [(NSHTTPURLResponse*)downloadTask.response statusCode];
         if (statusCode >= 400) {
 	        NSLog(@"ERROR: HTTP status code %@", @(statusCode));
-			success = NO;
+    			success = NO;
+          code = statusCode;
         }
     }
 
@@ -322,12 +324,13 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
 	                                            error:&error];
 	    if (error) {
 	        NSLog(@"ERROR: %@", error);
+          //TODO: error
 	    }
 	}
 
     if (download.completionBlock) {
         dispatch_async(dispatch_get_main_queue(), ^(void) {
-            download.completionBlock(success);
+            download.completionBlock(code);
         });
     }
 
@@ -417,7 +420,7 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
 
 - (BOOL)isFileDownloadingForUrl:(NSString *)fileIdentifier
               withProgressBlock:(void(^)(CGFloat progress))block
-                completionBlock:(void(^)(BOOL completed))completionBlock {
+                completionBlock:(void(^)(NSInteger completed))completionBlock {
     BOOL retValue = NO;
     TWRDownloadObject *download = [self.downloads objectForKey:fileIdentifier];
     if (download) {
