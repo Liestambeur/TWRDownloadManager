@@ -229,7 +229,7 @@
         [download.downloadTask cancel];
         [self.downloads removeObjectForKey:fileIdentifier];
         if (download.completionBlock) {
-            download.completionBlock(NO);
+            download.completionBlock(1);
         }
     }
     if (self.downloads.count == 0) {
@@ -241,7 +241,7 @@
 - (void)cancelAllDownloads {
     [self.downloads enumerateKeysAndObjectsUsingBlock:^(id key, TWRDownloadObject *download, BOOL *stop) {
         if (download.completionBlock) {
-            download.completionBlock(NO);
+            download.completionBlock(1);
         }
         [download.downloadTask cancel];
         [self.downloads removeObjectForKey:key];
@@ -356,9 +356,11 @@ totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
 
         if (download.completionBlock) {
             dispatch_async(dispatch_get_main_queue(), ^(void) {
-                download.completionBlock(NO);
+                download.completionBlock(2);
             });
         }
+
+        //TODO: does not return completionBlock
 
         // remove object from the download
         [self.downloads removeObjectForKey:fileIdentifier];
